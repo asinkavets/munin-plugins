@@ -10,7 +10,7 @@ usually bundled with NVIDIA GPU driver, to obtain information.
 
 =head1 CONFIGURATION
 
-This is a wildcard plugin. The wildcard prefix link name should be the 
+This is a wildcard plugin. The wildcard prefix link name should be the
 value to monitor.
 
 This plugin uses the following configuration variables:
@@ -37,7 +37,7 @@ C<ln -s /usr/share/munin/plugins/nvidia_gpu_ /etc/munin/plugins/nvidia_gpu_temp>
 
 =item *
 
-Add support for specific professional GPU features such as number of compute 
+Add support for specific professional GPU features such as number of compute
 processes, clocks, power draw, utilization, and so on.
 
 =item *
@@ -48,13 +48,16 @@ Use multigraphs for multiple GPUs (http://munin-monitoring.org/wiki/MultigraphSa
 
 =head1 AUTHOR
 
-Nuno Fachada
-faken@fakenmc.com
+Nuno Fachada <faken@fakenmc.com>
+
+=head1 CONTRIBUTOR
+
+2017, Aliaksandr Sinkavets <alexsinkovec@gmail.com>
 
 =head1 LICENSE
 
  GNU General Public License, version 2
- http://www.gnu.org/licenses/gpl-2.0.html 
+ http://www.gnu.org/licenses/gpl-2.0.html
 
 =head1 MAGIC MARKERS
 
@@ -71,7 +74,7 @@ nvSmiExec=${smiexec:-'/usr/bin/nvidia-smi'}
 
 # Check if autoconf was requested
 if [ "$1" = "autoconf" ]; then
-	# Autoconf only returns yes if nvidia-smi exists and is executable 
+	# Autoconf only returns yes if nvidia-smi exists and is executable
 	if [ -x $nvSmiExec ]; then
 		echo yes
 		exit 0
@@ -87,6 +90,9 @@ if [ "$1" = "suggest" ]; then
 	echo "mem"
 	echo "fan"
 	echo "power"
+  	echo "gclock"
+  	echo "mclock"
+	echo "util"
 	exit 0
 fi
 
@@ -114,7 +120,7 @@ if [ "$1" = "config" ]; then
 			echo 'graph_title GPU temperature'
 			echo 'graph_args -l 0 -u 120'
 			echo 'graph_vlabel Degrees (C)'
-			echo 'graph_category sensors'
+			echo 'graph_category gpu'
 			echo "graph_info Temperature information for NVIDIA GPUs using driver version $driverVersion"
 			nGpusCounter=0
 			while [ $nGpusCounter -lt $nGpus ]
@@ -124,7 +130,7 @@ if [ "$1" = "config" ]; then
 				echo "temp${nGpusCounter}.critical ${critical:-95}"
 				echo "temp${nGpusCounter}.info Temperature information for $gpuName"
 				: $(( nGpusCounter = $nGpusCounter + 1 ))
-			done 
+			done
 			;;
 		mem)
 			# First determine total memory of each GPU...
@@ -146,14 +152,14 @@ if [ "$1" = "config" ]; then
 			echo 'graph_title GPU memory usage'
 			echo 'graph_args -l 0 -u 100'
 			echo 'graph_vlabel Percentage'
-			echo 'graph_category memory'
+			echo 'graph_category gpu'
 			echo "graph_info FB Memory usage for NVIDIA GPUs using driver version $driverVersion (total memory is $gpusTotalMem)"
 			;;
 		fan)
 			echo 'graph_title GPU fan speed'
 			echo 'graph_args -l 0 -u 100'
 			echo 'graph_vlabel Percentage'
-			echo 'graph_category sensors'
+			echo 'graph_category gpu'
 			echo "graph_info Fan speed of NVIDIA GPUs using driver version $driverVersion"
 			nGpusCounter=0
 			while [ $nGpusCounter -lt $nGpus ]
@@ -161,12 +167,12 @@ if [ "$1" = "config" ]; then
 				gpuName=`echo "$nGpusOutput" | sed -n $(( $nGpusCounter + 1 ))p | cut -d \( -f 1`
 				echo "fan${nGpusCounter}.info Fan information for $gpuName"
 				: $(( nGpusCounter = $nGpusCounter + 1 ))
-				done 
+				done
 			;;
 		power)
 			echo 'graph_title GPU power consumption'
 			echo 'graph_vlabel Watt'
-			echo 'graph_category sensors'
+			echo 'graph_category gpu'
 			echo "graph_info power consumption of NVIDIA GPUs using driver version $driverVersion"
 			nGpusCounter=0
 			while [ $nGpusCounter -lt $nGpus ]
@@ -176,11 +182,51 @@ if [ "$1" = "config" ]; then
 				: $(( nGpusCounter = $nGpusCounter + 1 ))
 				done
 			;;
-		*)
-			echo "Can't run without a proper symlink. Exiting."
-			echo "Try running munin-node-configure --suggest."
-			exit 1
-			;;
+    		gclock)
+      			echo 'graph_title GPU core clocks'
+      			echo 'graph_vlabel MHz'
+      			echo 'graph_category gpu'
+      			echo "graph_info GPU core clocks of NVIDIA GPUs using driver version $driverVersion"
+      			nGpusCounter=0
+      			while [ $nGpusCounter -lt $nGpus ]
+      			do
+        			gpuName=`echo "$nGpusOutput" | sed -n $(( $nGpusCounter + 1 ))p | cut -d \( -f 1`
+        			echo "gclock${nGpusCounter}.info core speed of $gpuName"
+        			: $(( nGpusCounter = $nGpusCounter + 1 ))
+        			done
+      			;;
+    		mclock)
+      			echo 'graph_title GPU memory clocks'
+      			echo 'graph_vlabel MHz'
+      			echo 'graph_category gpu'
+      			echo "graph_info GPU memory clocks of NVIDIA GPUs using driver version $driverVersion"
+      			nGpusCounter=0
+      			while [ $nGpusCounter -lt $nGpus ]
+      			do
+      			  	gpuName=`echo "$nGpusOutput" | sed -n $(( $nGpusCounter + 1 ))p | cut -d \( -f 1`
+      			  	echo "mclock${nGpusCounter}.info memory speed of $gpuName"
+      			  	: $(( nGpusCounter = $nGpusCounter + 1 ))
+      			  	done
+      			;;
+        	util)
+      			echo 'graph_title GPU utilization percentage'
+      			echo 'graph_args -l 0 -u 100'
+      			echo 'graph_vlabel Percentage'
+      			echo 'graph_category gpu'
+      			echo "graph_info GPU utilization percentage of NVIDIA GPUs using driver version $driverVersion"
+      			nGpusCounter=0
+      			while [ $nGpusCounter -lt $nGpus ]
+      			do
+      				gpuName=`echo "$nGpusOutput" | sed -n $(( $nGpusCounter + 1 ))p | cut -d \( -f 1`
+      				echo "fan${nGpusCounter}.info Fan information for $gpuName"
+      				: $(( nGpusCounter = $nGpusCounter + 1 ))
+      				done
+      			;;
+    		*)
+      			echo "Can't run without a proper symlink. Exiting."
+      			echo "Try running munin-node-configure --suggest."
+      			exit 1
+      			;;
 	esac
 
 	# Common stuff for all quantities
@@ -222,6 +268,15 @@ case $name in
 	power)
 		valueGpus=`echo "$smiOutput" | grep "Power Draw" | cut -d ':' -f 2 | cut -d ' ' -f 2`
 		;;
+  	gclock)
+    		valueGpus=`echo "$smiOutput" | grep -A 1 '^    Clocks$' | grep Graphics | cut -d ':' -f 2 | cut -d ' ' -f 2`
+    		;;
+  	mclock)
+    		valueGpus=`echo "$smiOutput" | grep -A 3 '^    Clocks$' | grep Memory | cut -d ':' -f 2 | cut -d ' ' -f 2`
+    		;;
+    	util)
+        	valueGpus=`echo "$smiOutput" | grep -A 1 'Utilization' | grep Gpu | cut -d ':' -f 2 | cut -d ' ' -f 2`
+       		;;
 	*)
 		echo "Can't run without a proper symlink. Exiting."
 		echo "Try running munin-node-configure --suggest."
@@ -238,6 +293,3 @@ do
 	echo "${name}${nGpusCounter}.value $value"
 	: $(( nGpusCounter = $nGpusCounter + 1 ))
 done
-
-
-
