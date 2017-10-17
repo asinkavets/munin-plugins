@@ -93,6 +93,7 @@ if [ "$1" = "suggest" ]; then
   	echo "gclock"
   	echo "mclock"
 	echo "util"
+	echo "count"
 	exit 0
 fi
 
@@ -222,6 +223,12 @@ if [ "$1" = "config" ]; then
       				: $(( nGpusCounter = $nGpusCounter + 1 ))
       				done
       			;;
+		count)
+            		echo 'graph_title GPU count'
+            		echo 'graph_vlabel PCs'
+            		echo 'graph_category gpu'
+            		echo "graph_info Ammount of NVIDIA GPUs using driver version $driverVersion"
+            		;;
     		*)
       			echo "Can't run without a proper symlink. Exiting."
       			echo "Try running munin-node-configure --suggest."
@@ -277,6 +284,9 @@ case $name in
     	util)
         	valueGpus=`echo "$smiOutput" | grep -A 1 'Utilization' | grep Gpu | cut -d ':' -f 2 | cut -d ' ' -f 2`
        		;;
+    	count)
+      		valueGpus=`echo "$nGpus"`
+    		;;
 	*)
 		echo "Can't run without a proper symlink. Exiting."
 		echo "Try running munin-node-configure --suggest."
